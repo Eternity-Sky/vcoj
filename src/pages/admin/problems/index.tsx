@@ -14,9 +14,11 @@ import {
 } from '@chakra-ui/react'
 import { GetServerSideProps } from 'next'
 import { useSession } from 'next-auth/react'
+import { getServerSession } from 'next-auth'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import ProblemModal from '@/components/admin/ProblemModal'
+import { authOptions } from '@/pages/api/auth/[...nextauth]'
 
 interface AdminProblemsPageProps {
   problems: {
@@ -93,8 +95,8 @@ export default function AdminProblemsPage({ problems }: AdminProblemsPageProps) 
   )
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req })
+export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+  const session = await getServerSession(req, res, authOptions)
   
   if (!session?.user?.email) {
     return {
