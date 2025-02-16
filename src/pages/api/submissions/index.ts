@@ -12,6 +12,10 @@ export default async function handler(
     return res.status(401).json({ message: '请先登录' })
   }
 
+  if (!session.user?.email) {
+    return res.status(401).json({ message: '用户邮箱不存在' })
+  }
+
   if (req.method === 'POST') {
     try {
       const { problemId, code, language } = req.body
@@ -25,7 +29,7 @@ export default async function handler(
       }
 
       const user = await prisma.user.findUnique({
-        where: { email: session.user?.email }
+        where: { email: session.user.email }
       })
 
       if (!user) {
