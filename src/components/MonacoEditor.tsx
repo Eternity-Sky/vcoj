@@ -1,5 +1,10 @@
 import React from 'react'
-import Editor from '@monaco-editor/react'
+import dynamic from 'next/dynamic'
+
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => <div>Loading...</div>
+})
 
 interface MonacoEditorProps {
   language: string;
@@ -7,9 +12,9 @@ interface MonacoEditorProps {
   onChange: (value: string) => void;
 }
 
-export default function MonacoEditor({ language, value, onChange }: MonacoEditorProps) {
+export default function CodeEditor({ language, value, onChange }: MonacoEditorProps) {
   return (
-    <Editor
+    <MonacoEditor
       height="100%"
       defaultLanguage={language}
       value={value}
