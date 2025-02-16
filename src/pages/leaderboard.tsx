@@ -11,16 +11,15 @@ import {
   Avatar,
 } from '@chakra-ui/react'
 import { GetServerSideProps } from 'next'
-import dbConnect from '@/lib/mongodb'
-import User from '@/models/User'
+import prisma from '@/lib/prisma'
 
 interface LeaderboardPageProps {
   users: {
-    _id: string;
+    id: string;
     name: string;
-    image: string;
+    image: string | null;
     rating: number;
-    solvedProblems: string[];
+    solvedProblems: number;
   }[];
 }
 
@@ -39,13 +38,13 @@ export default function LeaderboardPage({ users }: LeaderboardPageProps) {
         </Thead>
         <Tbody>
           {users.map((user, index) => (
-            <Tr key={user._id}>
+            <Tr key={user.id}>
               <Td>{index + 1}</Td>
               <Td>
-                <Avatar size="sm" src={user.image} mr={2} />
+                <Avatar size="sm" src={user.image || undefined} mr={2} />
                 {user.name}
               </Td>
-              <Td>{user.solvedProblems.length}</Td>
+              <Td>{user.solvedProblems}</Td>
               <Td>{user.rating}</Td>
             </Tr>
           ))}
@@ -56,14 +55,30 @@ export default function LeaderboardPage({ users }: LeaderboardPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-  await dbConnect()
-  const users = await User.find()
-    .sort({ rating: -1 })
-    .limit(100)
-  
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      rating: true,
+      solvedProblems: {
+        select: {
+          id: true,
+        },
+      },
+    },
+    orderBy: {
+      rating: 'desc',
+    },
+    take: 100,
+  })
+
   return {
     props: {
-      users: JSON.parse(JSON.stringify(users))
-    }
+      users: users.map(user => ({
+        ...user,
+        solvedProblems: user.solvedProblems.length,
+      })),
+    },
   }
 } 
