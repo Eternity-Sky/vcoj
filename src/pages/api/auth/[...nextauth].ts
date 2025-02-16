@@ -1,8 +1,17 @@
-import NextAuth from 'next-auth'
+import NextAuth, { DefaultSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import prisma from '@/lib/prisma'
 import { compare } from 'bcryptjs'
+
+// 扩展 Session 类型
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+    } & DefaultSession["user"]
+  }
+}
 
 export default NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -50,7 +59,7 @@ export default NextAuth({
   callbacks: {
     async session({ session, token }) {
       if (session?.user) {
-        session.user.id = token.sub
+        session.user.id = token.sub!
       }
       return session
     },
