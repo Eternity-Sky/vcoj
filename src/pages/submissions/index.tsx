@@ -12,19 +12,18 @@ import {
 } from '@chakra-ui/react'
 import { GetServerSideProps } from 'next'
 import { useSession } from 'next-auth/react'
-import dbConnect from '@/lib/mongodb'
-import Submission from '@/models/Submission'
+import prisma from '@/lib/prisma'
 
 interface SubmissionsPageProps {
   submissions: {
-    _id: string;
+    id: string;
     problem: {
       title: string;
     };
     language: string;
     status: string;
-    executionTime: number;
-    memoryUsage: number;
+    executionTime: number | null;
+    memoryUsage: number | null;
     createdAt: string;
   }[];
 }
@@ -63,7 +62,7 @@ export default function SubmissionsPage({ submissions }: SubmissionsPageProps) {
         </Thead>
         <Tbody>
           {submissions.map((submission) => (
-            <Tr key={submission._id}>
+            <Tr key={submission.id}>
               <Td>{submission.problem.title}</Td>
               <Td>{submission.language}</Td>
               <Td>
@@ -83,15 +82,32 @@ export default function SubmissionsPage({ submissions }: SubmissionsPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  await dbConnect()
-  const submissions = await Submission.find()
-    .populate('problem', 'title')
-    .sort({ createdAt: -1 })
-    .limit(50)
+  const submissions = await prisma.submission.findMany({
+    select: {
+      id: true,
+      problem: {
+        select: {
+          title: true
+        }
+      },
+      language: true,
+      status: true,
+      executionTime: true,
+      memoryUsage: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc'
+    },
+    take: 50
+  })
   
   return {
     props: {
-      submissions: JSON.parse(JSON.stringify(submissions))
+      submissions: submissions.map(submission => ({
+        ...submission,
+        createdAt: submission.createdAt.toISOString()
+      }))
     }
   }
 } 
