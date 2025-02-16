@@ -11,8 +11,7 @@ import {
 import { GetServerSideProps } from 'next'
 import { useSession } from 'next-auth/react'
 import dynamic from 'next/dynamic'
-import dbConnect from '@/lib/mongodb'
-import Problem from '@/models/Problem'
+import prisma from '@/lib/prisma'
 import axios from 'axios'
 
 const MonacoEditor = dynamic(
@@ -22,7 +21,7 @@ const MonacoEditor = dynamic(
 
 interface ProblemDetailProps {
   problem: {
-    _id: string;
+    id: string;
     title: string;
     description: string;
     difficulty: string;
@@ -51,7 +50,7 @@ export default function ProblemDetail({ problem }: ProblemDetailProps) {
     setSubmitting(true)
     try {
       const res = await axios.post('/api/submissions', {
-        problemId: problem._id,
+        problemId: problem.id,
         code,
         language,
       })
@@ -123,8 +122,19 @@ export default function ProblemDetail({ problem }: ProblemDetailProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
-  await dbConnect()
-  const problem = await Problem.findById(params?.id)
+  const problem = await prisma.problem.findUnique({
+    where: { 
+      id: params?.id as string 
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      difficulty: true,
+      timeLimit: true,
+      memoryLimit: true,
+    }
+  })
   
   if (!problem) {
     return {
@@ -134,7 +144,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
 
   return {
     props: {
-      problem: JSON.parse(JSON.stringify(problem))
+      problem
     }
   }
 } 

@@ -12,13 +12,11 @@ import {
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import { GetServerSideProps } from 'next'
-import dbConnect from '@/lib/mongodb'
-import Problem from '@/models/Problem'
-import { IProblem } from '@/models/Problem'
+import prisma from '@/lib/prisma'
 
 interface ProblemsPageProps {
   problems: {
-    _id: string;
+    id: string;
     title: string;
     difficulty: string;
   }[];
@@ -50,9 +48,9 @@ export default function ProblemsPage({ problems }: ProblemsPageProps) {
         </Thead>
         <Tbody>
           {problems.map((problem) => (
-            <Tr key={problem._id}>
+            <Tr key={problem.id}>
               <Td>
-                <Link href={`/problems/${problem._id}`}>
+                <Link href={`/problems/${problem.id}`}>
                   {problem.title}
                 </Link>
               </Td>
@@ -70,12 +68,20 @@ export default function ProblemsPage({ problems }: ProblemsPageProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async () => {
-  await dbConnect()
-  const problems = await Problem.find({}, 'title difficulty')
+  const problems = await prisma.problem.findMany({
+    select: {
+      id: true,
+      title: true,
+      difficulty: true,
+    },
+    orderBy: {
+      id: 'asc'
+    }
+  })
   
   return {
     props: {
-      problems: JSON.parse(JSON.stringify(problems))
+      problems
     }
   }
 } 
