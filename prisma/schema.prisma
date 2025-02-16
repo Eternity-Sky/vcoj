@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String
+  email          String       @unique
+  password       String
+  image          String?
+  solvedProblems Problem[]   @relation("UserSolvedProblems")
+  submissions    Submission[]
+  rating         Int          @default(1500)
+  createdAt      DateTime     @default(now())
+}
+
+model Problem {
+  id            String       @id @default(cuid())
+  title         String
+  description   String
+  difficulty    String
+  testCases     Json[]
+  timeLimit     Int         @default(1000)
+  memoryLimit   Int         @default(256)
+  solvedBy      User[]      @relation("UserSolvedProblems")
+  submissions   Submission[]
+  createdAt     DateTime    @default(now())
+}
+
+model Submission {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  problem       Problem  @relation(fields: [problemId], references: [id])
+  problemId     String
+  code          String
+  language      String
+  status        String
+  executionTime Int?
+  memoryUsage   Int?
+  createdAt     DateTime @default(now())
+} 

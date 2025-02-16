@@ -1,12 +1,11 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter'
-import clientPromise from '@/lib/mongodb'
-import dbConnect from '@/lib/mongodb'
-import User from '@/models/User'
-import { compare, hash } from 'bcryptjs'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import prisma from '@/lib/prisma'
+import { compare } from 'bcryptjs'
 
 export default NextAuth({
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -15,13 +14,13 @@ export default NextAuth({
         password: { label: "密码", type: "password" }
       },
       async authorize(credentials) {
-        await dbConnect()
-
         if (!credentials?.email || !credentials?.password) {
           throw new Error('请输入邮箱和密码')
         }
 
-        const user = await User.findOne({ email: credentials.email })
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        })
 
         if (!user) {
           throw new Error('用户不存在')
@@ -34,7 +33,7 @@ export default NextAuth({
         }
 
         return {
-          id: user._id.toString(),
+          id: user.id,
           email: user.email,
           name: user.name,
           image: user.image,
@@ -42,7 +41,6 @@ export default NextAuth({
       }
     })
   ],
-  adapter: MongoDBAdapter(clientPromise),
   session: {
     strategy: 'jwt'
   },
